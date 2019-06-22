@@ -8,7 +8,7 @@
 - Willian Bruschi Vaneli (willianvaneli@gmail.com)
 
 #### Ambiente de desenvolvimento:
-Programa desenvolvido em Python (3.6.7), utilizando a biblioteca [Lark](https://github.com/lark-parser/lark), Ubuntu 18.04 e Visual Studio Code (1.35.1) com a extensão para Python da Microsoft.
+Programa desenvolvido em Python (3.6.7), utilizando a biblioteca [Lark](https://github.com/lark-parser/lark), Ubuntu 18.04 e PyCharm 2019.1.3 (Community Edition).
 
 ### Descrição dos arquivos:
 
