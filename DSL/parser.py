@@ -1,7 +1,3 @@
-#
-# This example shows how to write a basic calculator with variables.
-#
-
 from lark import Lark, Transformer, v_args
 
 
@@ -15,7 +11,7 @@ calc_grammar = """
           | NAME "=" sum    -> assign_var
           | function
 
-    ?function: "def" NAME "(" NAME("," NAME)* ")" ":" block
+    ?function: "def" NAME "(" NAME("," NAME)* ")" ":" block -> assign_func
 
     ?block: if
           | while
@@ -36,6 +32,7 @@ calc_grammar = """
     ?atom: NUMBER           -> number
          | "-" atom         -> neg
          | NAME             -> var
+         | function         -> func
          | "(" sum ")"
 
     %import common.CNAME -> NAME
@@ -62,12 +59,12 @@ class CalculateTree(Transformer):
     def var(self, name):
         return self.vars[name]
 
-    def assign_function(self, name, value):
-        self.functions[name] = value
+    def assign_func(self, name, value):
+        self.funcs[name] = value
         return value
 
-    def function(self, name):
-        return self.functions[name]
+    def func(self, name):
+        return self.funcs[name]
 
 
 calc_parser = Lark(calc_grammar, parser='lalr', transformer=CalculateTree())
