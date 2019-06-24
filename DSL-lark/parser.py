@@ -64,7 +64,7 @@ class CalculateTree(Transformer):
         return value
 
     def func(self, name):
-        return self.funcs[name]
+        return self.funcs[name]codecode
 
 
 calc_parser = Lark(calc_grammar, parser='lalr', transformer=CalculateTree())

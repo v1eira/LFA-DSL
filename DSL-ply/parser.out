@@ -1,0 +1,80 @@
+Created by PLY version 3.11 (http://www.dabeaz.com/ply)
+
+Unused terminals:
+
+    COMMA
+    ENDLINE
+
+Grammar
+
+Rule 0     S' -> contexto
+Rule 1     contexto -> deffuncao
+Rule 2     contexto -> funcao
+Rule 3     contexto -> expression
+Rule 4     funcao -> NAME LIST
+Rule 5     deffuncao -> DEF NAME args bloco
+Rule 6     args -> LPAR NAME RPAR
+Rule 7     args -> largs
+Rule 8     largs -> args args
+Rule 9     expression -> term
+Rule 10    expression -> var_assign
+Rule 11    expression -> empty
+Rule 12    bloco -> LCHAVES expression RCHAVES
+Rule 13    var_assign -> NAME EQUALS term
+Rule 14    term -> term EXPONENT term
+Rule 15    term -> term MULTIPLY term
+Rule 16    term -> term DIVIDE term
+Rule 17    term -> term DIVIDEINT term
+Rule 18    term -> term QUOTIENT term
+Rule 19    term -> term MINUS term
+Rule 20    term -> term PLUS term
+Rule 21    term -> factor
+Rule 22    factor -> nterm
+Rule 23    factor -> NUMBER
+Rule 24    factor -> positive
+Rule 25    factor -> negative
+Rule 26    negative -> MINUS term
+Rule 27    positive -> PLUS term
+Rule 28    nterm -> LPAR term RPAR
+Rule 29    term -> NAME
+Rule 30    empty -> <empty>
+
+Terminals, with rules where they appear
+
+COMMA                : 
+DEF                  : 5
+DIVIDE               : 16
+DIVIDEINT            : 17
+ENDLINE              : 
+EQUALS               : 13
+EXPONENT             : 14
+LCHAVES              : 12
+LPAR                 : 6 28
+MINUS                : 19 26
+MULTIPLY             : 15
+NAME                 : 4 5 6 13 29
+NUMBER               : 23
+PLUS                 : 20 27
+QUOTIENT             : 18
+RCHAVES              : 12
+RPAR                 : 6 28
+error                : 
+
+Nonterminals, with rules where they appear
+
+LIST                 : 4
+args                 : 5 8 8
+bloco                : 5
+contexto             : 0
+deffuncao            : 1
+empty                : 11
+expression           : 3 12
+factor               : 21
+funcao               : 2
+largs                : 7
+negative             : 25
+nterm                : 22
+positive             : 24
+term                 : 9 13 14 14 15 15 16 16 17 17 18 18 19 19 20 20 26 27 28
+var_assign           : 10
+
