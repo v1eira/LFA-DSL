@@ -3,10 +3,6 @@ import ply.lex as lex
 from ply import *
 import sys
 
-keywords = (
-    'LET', 'READ', 'DATA', 'PRINT', 'GOTO', 'IF', 'THEN', 'FOR', 'NEXT', 'TO', 'STEP',
-    'END', 'STOP', 'DEF', 'GOSUB', 'DIM', 'REM', 'RETURN', 'RUN', 'LIST', 'NEW',
-)
 
 '''
 Definicao o conjunto dos tokens
@@ -29,7 +25,15 @@ tokens = [
     'RCHAVES',
     'COMMA',
     'ENDLINE',
-    'DEF'
+    'DEF',
+    'IF',
+    'WHILE',
+    'IGUAL',
+    'MENOR',
+    'MAIOR',
+    'MENORIGUAL',
+    'MAIORIGUAL',
+    'RETURN'
 ]
 
 # Definindo os tokens onde tokens = conjunto
@@ -46,9 +50,13 @@ t_LPAR = r'\('
 t_RPAR = r'\)'
 t_LCHAVES = r'\{'
 t_RCHAVES = r'\}'
-#t_DEF = r'def'
 t_COMMA = r'\,'
 t_ENDLINE = r'\;'
+t_IGUAL = r'\=\='
+t_MENOR = r'\<'
+t_MAIOR = r'\>'
+t_MENORIGUAL = r'\<\='
+t_MAIORIGUAL = r'\>\='
 
 # Ignorando espacos em branco
 t_ignore = r' '
@@ -65,6 +73,21 @@ def t_DEF(tokens):
     tokens.type = 'DEF'
     return tokens
 
+def t_IF(tokens):
+    r'if'
+    tokens.type = 'IF'
+    return tokens
+    
+
+def t_WHILE(tokens):
+    r'while'
+    tokens.type = 'WHILE'
+    return tokens
+
+def t_RETURN(tokens):
+    r'return'
+    tokens.type = 'RETURN'
+    return tokens
 
 # Definindo name para variaveis, exige uma letra e pode ser seguido por letras ou numeros 
 def t_NAME(tokens):
@@ -78,11 +101,9 @@ def t_error(tokens):
 
 lexer = lex.lex()
 
-env = {}
-contexto = ''
-
 # Definindo as precedencias
 precedence = (
+    ('left','IGUAL','MENOR','MAIOR','MENORIGUAL','MAIORIGUAL'),
     ('left','PLUS','MINUS'),
     ('left','DIVIDEINT','QUOTIENT'),
     ('left','MULTIPLY','DIVIDE'),
@@ -94,78 +115,132 @@ precedence = (
 def p_contexto(entrada):
     '''
     contexto    : deffuncao
-                | funcao
-                | expression
+                | bloco
+                | empty
     '''
-    print(run(entrada[1]))
+    entrada[0] = entrada[1]
+
+
+def p_bloco_linhas(entrada):
+    '''
+    bloco   : linha ENDLINE bloco
+    '''
+    entrada[0] = ('blocoLinhas',entrada[1],entrada[3])
+
+
+def p_bloco_linha(entrada):
+    '''
+    bloco   : linha
+    '''
+    entrada[0] = entrada[1]
+
+
+def p_linha(entrada):
+    '''
+    linha   : funcao
+            | if
+            | while
+            | return
+            | var_assign
+            | expression
+    '''
+    entrada[0] = entrada[1]
+
+
+def p_return(entrada):
+    '''
+    return  : RETURN term COMMA return
+    '''
+    entrada[0] = ('returns',entrada[2],entrada[4])
+
+def p_return_return(entrada):
+    '''
+    return  : RETURN term
+    '''
+    entrada[0] = ('return',entrada[2])
 
 
 def p_funcao(entrada):
     '''
-    funcao  : NAME values
+    funcao  : NAME LPAR values RPAR
     '''
-    contexto = entrada[1]
-    print("deu certo")
+    entrada[0]= ('func',entrada[1],entrada[3])
+    
 
-def p_values(entrada):
+def p_values_value_name(entrada):
+    '''
+    values  : NAME COMMA values
+    '''
+    entrada[0]= ('values',('var',entrada[1]),entrada[3])
+
+def p_values_value_number(entrada):
+    '''
+    values  : NUMBER COMMA values
+    '''
+    entrada[0]= ('values',entrada[1],entrada[3])
+
+def p_values_number(entrada):
+    '''
+    values  : NUMBER
+    '''
+    entrada[0]= ('value',entrada[1])
+
+def p_values_name(entrada):
     '''
     values  : NAME
-            | NUMBER
     '''
-    env['func'+contexto][2].add(entrada[1])
+    entrada[0]= ('value',('var',entrada[1]))
+
 
 
 def p_deffuncao(entrada):
     '''
-    deffuncao   : DEF NAME args bloco
+    deffuncao   : DEF NAME LPAR args RPAR LCHAVES bloco RCHAVES
     '''
-    entrada[0] = ('def', entrada[2],entrada[3],entrada[4])
+    entrada[0] = ('def', entrada[2],entrada[4],entrada[7])
 
 
 def p_args(entrada):
     '''
-    args    : LPAR NAME RPAR
+    args    : NAME COMMA args
     '''
-    entrada[0]= ('fc',entrada[2])
+    entrada[0]= ('fcs',entrada[1],entrada[3])
 
-def p_args_largs(entrada):
+def p_args_arg(entrada):
     '''
-    args    : largs
+    args :   NAME
     '''
-    entrada[0] = entrada[1]
+    entrada[0] = ('fc', entrada[1])
 
-def p_largs(entrada):
-    '''
-    largs   : args args
-    '''
-    entrada[0] = ('fcs',entrada[1],entrada[2])
 
 def p_expression(entrada):
     '''
     expression  : term
-                | var_assign
-                | empty
     '''
     entrada[0] = entrada[1]
     
 
-def p_bloco(entrada):
+
+def p_if(entrada):
     '''
-    bloco   : LCHAVES expression RCHAVES
+    if  : IF LPAR bloco RPAR LCHAVES bloco RCHAVES
     '''
-    entrada[0] = entrada[2]
+    entrada[0] = ('if',entrada[3],entrada[6])
+
+def p_while(entrada):
+    '''
+    while   : WHILE LPAR bloco RPAR LCHAVES bloco RCHAVES
+    '''
+    entrada[0] = ('while',entrada[3],entrada[6])
 
 
-#def p_linha(entrada):
-#    '''
-#    linha   : expression ENDLINE
-#    '''
-#    entrada[0] = entrada[1]
  
 # Definicao de como passar um valor para uma variavel 
 def p_var_assign(entrada):
     '''
     var_assign  : NAME EQUALS term
+                | NAME EQUALS funcao
+                | NAME EQUALS var_assign
     '''
     entrada[0] = ('=', entrada[1],entrada[3])
 
@@ -179,6 +254,16 @@ def p_term(entrada):
             | term QUOTIENT term
             | term MINUS term
             | term PLUS term
+            | term IGUAL term
+            | term MENOR term
+            | term MAIOR term
+            | term MENORIGUAL term
+            | term MAIORIGUAL term
+            | term IGUAL funcao
+            | term MENOR funcao
+            | term MAIOR funcao
+            | term MENORIGUAL funcao
+            | term MAIORIGUAL funcao
     '''
     entrada[0] = (entrada[2], entrada[1], entrada[3])
 
@@ -226,8 +311,6 @@ def p_term_var(entrada):
     '''
     entrada[0] = ('var', entrada[1])
 
-def p_error(entrada):
-    print("Syntax error found!" + entrada.value)
 
 def p_empty(entrada):
     '''
@@ -238,6 +321,8 @@ def p_empty(entrada):
 parser = yacc.yacc()
 # env é um dicionário que contém as variáveis. Este dicionário é global.
 
+env = {}
+contexto = ''
 
 # Executando a string de entrada
 def run(entrada):
@@ -260,55 +345,145 @@ def run(entrada):
             return run(entrada[1]) ** run(entrada[2])
         elif entrada[0] == '=':
             if (contexto == ''):
-                env[entrada[1]] = run(entrada[2])
+                resultado = run(entrada[2])
+                env[entrada[1]] = resultado
+                return resultado
             else:
-                env[contexto+entrada[1]] = run(entrada[2])
+                resultado = run(entrada[2])
+                env[contexto+entrada[1]] = resultado
+                return resultado
+        elif entrada[0] == '==':
+            return run(entrada[1]) == run(entrada[2])
+        elif entrada[0] == '>':
+            return run(entrada[1]) > run(entrada[2])
+        elif entrada[0] == '>=':
+            return run(entrada[1]) >= run(entrada[2])
+        elif entrada[0] == '<':
+            return run(entrada[1]) < run(entrada[2])
+        elif entrada[0] == '<=':
+            return run(entrada[1]) <= run(entrada[2])
+        elif entrada[0] == 'if':
+            if (run(entrada[1])):
+                return run(entrada[2])
+            else:
+                print ('não executou if')
+        elif entrada[0] == 'while':
+            while (run(entrada[1])):
+                run(entrada[2])
         elif entrada[0] == 'var':
-            if entrada[1] in env:
-                return env[entrada[1]]
-            elif (contexto+entrada[1]) in env:
+            if contexto+entrada[1] in env:
                 return env[contexto+entrada[1]]
+            elif entrada[1] in env:
+                return env[entrada[1]]
             else:
-                return 'Undeclared variable found!'
+                print ('Undeclared variable found! -> ' + entrada[1])
+                return None
         elif entrada[0] == 'def':
-            print(entrada[1])
             env['func'+entrada[1]] = []
+            # para variaveis
             env['func'+entrada[1]].append([])
-            env['func'+entrada[1]][0].append(entrada[3])
+            # para bloco
+            env['func'+entrada[1]].append([])
+            # para valores
+            env['func'+entrada[1]].append([])
+            # para retorno
+            env['func'+entrada[1]].append([]) 
+            env['func'+entrada[1]][1].append(entrada[3])
             contexto = entrada[1]
             run(entrada[2])
             contexto=''
-            print('declarando funcao')
         elif entrada[0] == 'fcs':
-            run(entrada[1])
+            env['func'+contexto][0].append(entrada[1])
             run(entrada[2])
         elif entrada[0] == 'fc':
             env['func'+contexto][0].append(entrada[1])
         elif entrada[0] == 'func':
             contexto = entrada[1]
-            #run(entrada[2])
-            print('executando funcao')
+            run(entrada[2])
+            rodaFuncao("func"+contexto)
+            env["func"+contexto][2]=[]
+            limpaVarFun("func"+contexto)
+            #retornando resultados da função
+            listaResultados = []
+            # caso um resultado
+            if (len(env["func"+contexto][3])==0):
+                print("funcao sem retorno")
+                contexto=''
+                return None
+            if (len(env["func"+contexto][3]) == 1 ):
+                resultado = run(env["func"+contexto][3][0])
+                env["func"+contexto][3] = []
+                contexto=''
+                return resultado
+            #caso vários resultados
+            else:
+                for  i in env["func"+contexto][3] :
+                    listaResultados.append(run(i))
+                env["func"+contexto][3] = []
+                contexto=''
+                return listaResultados
+        elif entrada[0] == 'value':
+            env['func'+contexto][2].append(run(entrada[1]))
+        elif entrada[0] == 'values':
+            env['func'+contexto][2].append(run(entrada[1]))
+            run(entrada[2])
+        elif entrada[0] == 'blocoLinhas':
+            run(entrada[1])
+            run(entrada[2])
+        elif entrada[0] == 'return':
+            env['func'+contexto][3].append(run(entrada[1]))
+        elif entrada[0] == 'returns':
+            env['func'+contexto][3].append(run(entrada[1]))
+            run(entrada[2])
     else:
         return entrada
 
 
-def rodaFuncao ():
-    print("roda funcao")
+def rodaFuncao (fun):
+    if len(env[fun][0]) != len(env[fun][2]):
+        print ("Entrada da funcao nao compativel com os parametros de entrada")
+    else:
+        i = 0
+        while (i < len(env[fun][2])) :
+            env[contexto+env[fun][0][i]] = env[fun][2][i]          
+            i+=1
+    return run(env[fun][1][0])
+
+
+def limpaVarFun(fun):
+    i = 0
+    while (i < len(env[fun][0])) :
+        env.pop(contexto+env[fun][0][i])
+        i+=1
     return 0
 
-
-
-
-while True:
-    s = input('>> ')
-    if s == 'exit':
-        break
-    try:
-        lexer.input(s)
-        while True:
-            tok = lexer.token()
-            if not tok:
-                break           
-    except EOFError:
-        break
-    parser.parse(s)
+verificador = True
+while verificador:
+    arqEntrada = open("../teste/entrada.txt", 'r')
+    arqSaida = open("../teste/saida.txt", 'w+')
+    entrada = arqEntrada.readlines()
+    aux=''
+    for linha in entrada:
+        linha= linha[:len(linha)-1]
+        if str(linha) == 'exit':
+            verificador = False
+        elif linha != '':
+            try:
+                lexer.input(linha)
+                while True:
+                    tok = lexer.token()
+                    if not tok:
+                        break           
+            except EOFError:
+                None
+            result = run(parser.parse(linha))
+            
+            if result == None:
+                None
+            else:
+                aux += str(result)
+                aux += '\n'
+                print(aux)
+    arqSaida.writelines(aux)
+    arqEntrada.close()
+    arqSaida.close()
